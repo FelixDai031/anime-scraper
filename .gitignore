@@ -1,0 +1,31 @@
+# ===== 数据文件（爬虫/程序运行时生成的产物，体积大且会变）=====
+*.csv
+
+# ===== Python 缓存 =====
+__pycache__/
+*.pyc
+*.pyo
+
+# ===== 封面图片（本地化资源，205 张，体积太大不适合进仓库）=====
+site/covers/
+covers/
+*.png
+*.jpg
+*.jpeg
+*.webp
+
+# ===== 编辑器 / 系统垃圾 =====
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ===== 本地编译产物（昨天的 score.c 练习）=====
+*.exe
+
+# ===== 草稿 / 早期版本（非主程序，保持仓库清爽）=====
+anime_scraper_blank.py
+
+# ===== 生成物目录（由 csv_to_html.py 重新生成；只含 index.html 且缺封面图，不进仓库）=====
+site/
+site_band/
