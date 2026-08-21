@@ -20,9 +20,10 @@ HEADERS = {
 }
 
 
-def fetch_ranking(season_type):
-    """发请求，返回某一类的原始数据列表"""
-    params = {"season_type": season_type, "day": 7}
+def fetch_ranking(season_type, day=7):
+    """发请求，返回某一类的原始数据列表。
+    day=7 周榜，day=3 三日榜（还有 day=30 月榜，按需传参即可）"""
+    params = {"season_type": season_type, "day": day}
     response = requests.get(URL, headers=HEADERS, params=params)
     data = response.json()
     return data["result"]["list"]
@@ -62,14 +63,25 @@ def save_to_csv(rows, filename):
         writer.writerows(rows)
 
 
+def analyze_top(rows, key="follow", top_n=10, filename=None):
+    """按某个字段降序排，返回前 top_n 名（不修改原列表）。
+    key 可以取：follow(追番) / view(播放) / danmaku(弹幕) / rating(评分) / danmaku_rate(弹幕率)
+    传 filename 会把 Top 结果另存一份 CSV。"""
+    ranked = sorted(rows, key=lambda r: r.get(key, 0), reverse=True)[:top_n]
+    if filename:
+        save_to_csv(ranked, filename)
+    return ranked
+
+
 def main():
-    """主流程：抓番剧(1) ，合并存一个 CSV"""
+    """主流程：抓番剧(1) → 合并存 CSV → 多维分析 Top10"""
     categories = [("番剧", 1)]
+    DAY = 7  # 周榜；想试三日榜改成 3，月榜改成 30
 
     all_rows = []
     for name, season_type in categories:
-        print(f"正在抓【{name}】排行榜...")
-        raw_list = fetch_ranking(season_type)
+        print(f"正在抓【{name}】排行榜（day={DAY}）...")
+        raw_list = fetch_ranking(season_type, day=DAY)
         for item in raw_list:
             all_rows.append(parse_item(item, name))
         print(f"  {name} 抓到 {len(raw_list)} 条，累计 {len(all_rows)} 条")
@@ -77,6 +89,23 @@ def main():
 
     save_to_csv(all_rows, "anime_ranking_full.csv")
     print(f"\n✅ 全部完成，共 {len(all_rows)} 条，已存到 anime_ranking_full.csv")
+
+    # ---- Day5 新增：按多种维度排 Top10 ----
+    print("\n📊 追番数 Top10：")
+    for i, r in enumerate(analyze_top(all_rows, "follow", 10), 1):
+        print(f"  {i:2d}. {r['title']} — 追番 {r['follow']:,}")
+
+    print("\n📊 播放量 Top10：")
+    for i, r in enumerate(analyze_top(all_rows, "view", 10), 1):
+        print(f"  {i:2d}. {r['title']} — 播放 {r['view']:,}")
+
+    print("\n📊 弹幕率 Top10：")
+    for i, r in enumerate(analyze_top(all_rows, "danmaku_rate", 10), 1):
+        print(f"  {i:2d}. {r['title']} — 弹幕率 {r['danmaku_rate']}")
+
+    # 把追番 Top10 另存一份 CSV（方便你直接打开看）
+    analyze_top(all_rows, "follow", 10, filename="anime_top10_follow.csv")
+    print("\n💾 追番 Top10 已存到 anime_top10_follow.csv")
 
 
 if __name__ == "__main__":
